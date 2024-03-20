@@ -9,7 +9,7 @@ use Statikbe\LaravelChainedTranslator\ChainedTranslationManager;
 use Statikbe\LaravelChainedTranslator\ChainLoader;
 use Statikbe\NovaTranslationManager\Http\Requests\UpdateTranslationRequest;
 use Statikbe\NovaTranslationManager\TranslationManager;
-
+use App\Models\TranslationLang;
 class TranslationController extends AbstractTranslationController
 {
     /**
@@ -82,7 +82,17 @@ class TranslationController extends AbstractTranslationController
             $request->input('key'),
             $value
         );
-
+        TranslationLang::updateOrCreate(
+            [
+                'group' => $request->input('group'), 
+                'key' => $request->input('key')
+            ],
+            [
+                'type' => 'group', // Assuming 'group' is your intended default value. Adjust as necessary.
+                'translations' => json_encode([$request->input('locale') => $value])
+            ]
+        );
+    
         return response()->json(['success' => true]);
     }
 
@@ -94,14 +104,15 @@ class TranslationController extends AbstractTranslationController
                 $this->addTranslationsToData($data, $language, $group);
             }
         }
-
+        
         return array_values($data);
     }
 
-    private function addTranslationsToData(array &$data, array $language, string $group): array
+
+    private function addTranslationsToData(array &$data, array $language, string $group): void // Note the return type change to void
     {
         $translations = $this->chainedTranslationManager->getTranslationsForGroup($language['locale'], $group);
-
+    
         //transform to data structure necessary for frontend
         foreach ($translations as $key => $translation) {
             $dataKey = $group.'.'.$key;
@@ -115,8 +126,19 @@ class TranslationController extends AbstractTranslationController
                 ];
             }
             $data[$dataKey]['translations'][$language['locale']] = $translation;
+    
+            TranslationLang::updateOrCreate(
+                [
+                    'group' => $group, 
+                    'key' => $key
+                ],
+                [
+                    'type' => 'group', // Provide a default value for the 'type' field
+                    'translations' => json_encode($data[$dataKey]['translations'])
+                ]
+            );
+            
         }
-
-        return $data;
     }
+    
 }

@@ -10,6 +10,8 @@ use Statikbe\LaravelChainedTranslator\ChainLoader;
 use Statikbe\NovaTranslationManager\Http\Requests\UpdateTranslationRequest;
 use Statikbe\NovaTranslationManager\TranslationManager;
 use App\Models\TranslationLang;
+use Illuminate\Support\Facades\Artisan;
+
 class TranslationController extends AbstractTranslationController
 {
     /**
@@ -92,7 +94,8 @@ class TranslationController extends AbstractTranslationController
                 'translations' => json_encode([$request->input('locale') => $value])
             ]
         );
-    
+            Artisan::call('optimize:clear');
+
         return response()->json(['success' => true]);
     }
 
